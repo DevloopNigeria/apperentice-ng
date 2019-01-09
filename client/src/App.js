@@ -1,13 +1,15 @@
 import React, { Component } from 'react';
-import { Button } from 'reactstrap';
+import { Switch, Route } from 'react-router-dom';
+import Home from './components/Home';
+import About from './components/About';
 
 export default class App extends Component {
   render() {
     return (
-      <div className='App'>
-        Apprentice NG
-        <Button>Hello</Button>
-      </div>
+      <Switch>
+        <Route exact path='/' component={Home} />
+        <Route exact path='/about' component={About} />
+      </Switch>
     );
   }
 }
