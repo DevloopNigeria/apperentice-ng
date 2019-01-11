@@ -1,0 +1,6 @@
+# Dockerfile-mongodb
+FROM mvertes/alpine-mongo:latest
+WORKDIR /data
+EXPOSE 27017
+CMD ["mongod", "--smallfiles", "--logpath=/dev/null"]
+

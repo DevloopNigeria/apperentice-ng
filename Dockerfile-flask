@@ -1,0 +1,65 @@
+# Dockerfile-flask
+
+# Use an Python 3.7 runtime from alpine base image as a parent image
+FROM python:3.7-alpine
+
+# Set an environment variable with the directory
+# where we'll be running the app or app codes from
+ENV APP /app
+
+# Create the directory and instruct Docker to operate
+# from there from now on
+RUN mkdir $APP
+WORKDIR $APP
+
+# Expose the port uWSGI or the world will listen on
+EXPOSE 5000
+
+# Copy the requirements file in order to install
+# Python dependencies
+COPY requirements.txt .
+
+# Install any needed packages specified in requirements.txt
+#RUN pip install -r requirements.txt OR rather below since C compiler is needed to install uWSGI
+# Install build deps, then run `pip install`, then remove unneeded build deps all in a single step.
+#Correct the path to your production requirements file, if needed.
+RUN set -ex \
+    && apk add --no-cache --virtual .build-deps \
+            gcc \
+            make \
+            libc-dev \
+            musl-dev \
+            linux-headers \
+            pcre-dev \
+    && pyvenv /venv \
+    && /venv/bin/pip install -U pip \
+    && LIBRARY_PATH=/lib:/usr/lib /bin/sh -c "/venv/bin/pip install --no-cache-dir -r requirements.txt" \
+    && runDeps="$( \
+            scanelf --needed --nobanner --recursive /venv \
+                    | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
+                    | sort -u \
+                    | xargs -r apk info --installed \
+                    | sort -u \
+    )" \
+    && apk add --virtual .python-rundeps $runDeps \
+    && apk del .build-deps
+
+# We copy the rest of the codebase into the image
+COPY . .
+
+# Run app.py when the container launches
+#CMD ["python", "app.py"]
+
+#Finally, we run uWSGI with the app.ini file
+CMD [ "/venv/bin/uwsgi", "--ini", "app.ini" ]
+
+
+
+
+#You might have found it odd that I first copy requirements.txt into the image and later the rest of the codebase.
+#I do this because Docker creates layers (or intermediate images) as it builds your image.
+#Each layer is cached, and when a file that previously got copied into the image changes,
+#it invalidates its cache and that of all the following layers.
+#Therefore, we can copy a file that barely ever changes first (i.e. requirements.txt) and install modules in one go,
+#before even introducing the rest of the codebase which will most likely change after each build,
+#triggering a re-install of all of our modules/libraries.
