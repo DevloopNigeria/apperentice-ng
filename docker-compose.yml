@@ -1,0 +1,64 @@
+version: '3.6'
+services:
+  flask:
+    image: apprenticeng-flask-api
+    build:
+      context: .
+      dockerfile: Dockerfile-flask
+    volumes:
+      - ./:/app
+    environment:
+      - ENV=development
+      - PORT=5000
+      - DB=mongodb://mongodb:27017/apprenticeng
+
+  mongodb:
+    image: apprenticeng-mongodb
+    build:
+      context: .
+      dockerfile: Dockerfile-mongodb
+    volumes:
+      - ./data/mongodb/db:/data/db
+    environment:
+      - MONGO_DATA_DIR=/data/db
+      - MONGO_LOG_DIR=/dev/null
+      - VIRTUAL_HOST=apprenticeng.local
+      - VIRTUAL_PORT=27017
+    ports:
+      - 27017:27017
+    command: mongod --smallfiles --logpath=/dev/null --bind_ip_all # --quiet & the --bind_ip_all flag allows remote connection to the world, so it should be removed during production, thats why its not in Dockerfile-redis since this yml would not be used in prod.
+    depends_on:
+      - flask
+
+
+  redis:
+    image: apprenticeng-redis
+    build:
+      context: .
+      dockerfile: Dockerfile-redis
+    volumes:
+      - ./data/redis/:/data/redis
+    ports:
+      - 6379:6379
+    command: redis-server --requirepass devpassword --bind 0.0.0.0  # the --bind 0.0.0.0 flag allows remote connection to the world, so it should be removed during production
+    depends_on:
+      - flask
+
+  nginx:
+    image: apprenticeng-nginx-web
+    build:
+      context: .
+      dockerfile: Dockerfile-nginx
+    volumes:
+      - /etc/nginx/vhost.d
+      - /usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - /etc/nginx/certs
+    environment:
+      - VIRTUAL_HOST=apprenticeng.local
+      - VIRTUAL_PORT=5000, 5443
+    ports:
+      - 5000:80
+      - 5443:443
+    depends_on:
+      - flask
