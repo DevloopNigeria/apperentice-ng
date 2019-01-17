@@ -1,5 +1,6 @@
 Flask==1.0.2
 uWSGI==2.0.17.1
+Flask-RESTful
 pymongo
 mongoengine
 redis
