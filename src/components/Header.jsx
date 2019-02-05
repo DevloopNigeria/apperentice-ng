@@ -23,11 +23,6 @@ class Header extends Component {
                         <span><i class="fa btn btn-secondary fa-search" id="searchIcon" aria-hidden="true" ></i></span>
                     </form>
                     <ul className="navbar-nav">
-                        {/* <li className="nav-item ">
-                            <NavLink className="nav-link" to="/"> HOME
-                            <span className="sr-only">(current)</span>
-                            </NavLink>
-                        </li> */}
                         <li className="nav-item">
                             <NavLink className="nav-link" to="/"> HOME </NavLink>
                         </li>
